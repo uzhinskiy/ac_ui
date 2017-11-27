@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"./conf"
 )
@@ -109,8 +110,10 @@ func main() {
 	log.SetOutput(logTo)
 
 	http.HandleFunc("/", requestHandler)
-	http.HandleFunc("/list", getList)
-	http.HandleFunc("/info", getInfo)
+	http.HandleFunc("/list", List)
+	http.HandleFunc("/admin", Admin)
+	http.HandleFunc("/login", Login)
+	http.HandleFunc("/info", Info)
 	http.HandleFunc("/update", Update)
 	http.HandleFunc("/create", Create)
 	http.HandleFunc("/dump/", Dump)
@@ -152,7 +155,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
-func getList(w http.ResponseWriter, r *http.Request) {
+func List(w http.ResponseWriter, r *http.Request) {
 	custJSONs, _ := getJson()
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -161,7 +164,7 @@ func getList(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, fmt.Sprintf("%s", custJSONs))
 }
 
-func getInfo(w http.ResponseWriter, r *http.Request) {
+func Info(w http.ResponseWriter, r *http.Request) {
 	_, cj := getJson()
 	queryValues := r.URL.Query()
 	id := queryValues.Get("id")
@@ -172,7 +175,7 @@ func getInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("Server", conf.Config["version"])
-	log.Println(r.Method, "\t", r.URL.Path, "\t", http.StatusOK, "\t", r.UserAgent())
+	log.Println(r.Method, "\t", r.URL.RequestURI(), "\t", http.StatusOK, "\t", r.UserAgent())
 	fmt.Fprint(w, fmt.Sprintf("%s", j))
 }
 
@@ -243,7 +246,7 @@ func Dump(w http.ResponseWriter, r *http.Request) {
 	//queryValues := r.URL.Query()
 	urlPart := strings.Split(r.URL.Path, "/")
 	dumpWhat := urlPart[2]
-
+	log.Println(r.Method, "\t", r.URL.Path, "\t", http.StatusOK, "\t", r.UserAgent())
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("Server", conf.Config["version"])
@@ -251,12 +254,66 @@ func Dump(w http.ResponseWriter, r *http.Request) {
 	switch dumpWhat {
 	case "config":
 		{
-			fmt.Fprintf(w, "<pre>%s</pre>", conf.Config)
+			fmt.Fprint(w, "<pre><ul>")
+			for k, cfg := range conf.Config {
+				fmt.Fprintf(w, "<li>%s = %s</li>", k, cfg)
+			}
+			fmt.Fprint(w, "</ul></pre>")
 		}
 	case "log":
 		{
-			fmt.Println(conf.Config)
+			respFile, err := os.OpenFile(conf.Config["log_file"], os.O_RDONLY, 0)
+			if err != nil {
+				log.Println(err)
+			}
+			fi, err := respFile.Stat()
+			if err != nil {
+				log.Println(err)
+			}
+			var bytes = make([]byte, fi.Size())
+			respFile.Read(bytes)
+
+			fmt.Fprintf(w, "<pre>%s</pre>", bytes)
 		}
 	}
+}
 
+func Admin(w http.ResponseWriter, r *http.Request) {
+	file := r.URL.Path
+	base := conf.Config["document_root"]
+
+	auth_cookie, _ := r.Cookie("host")
+	fmt.Println(auth_cookie)
+
+	/* если отсутствует запрос к конкретному файлу – показать индексный файл */
+	if auth_cookie == nil {
+		file = "/login.html"
+	} else {
+		file = "/admin.html"
+	}
+	code := http.StatusOK
+	/* если не удалось загрузить нужный файл – показать сообщение о 404-ой ошибке */
+	respFile, err := os.OpenFile(base+file, os.O_RDONLY, 0)
+	if err != nil {
+		log.Println(err)
+		file = "/404.html"
+		respFile, err = os.OpenFile(base+file, os.O_RDONLY, 0)
+		code = http.StatusNotFound
+	}
+	/* считать содержимое файла */
+	fi, err := respFile.Stat()
+	contentType := mime.TypeByExtension(path.Ext(file))
+	var bytes = make([]byte, fi.Size())
+	respFile.Read(bytes)
+	log.Println(r.Method, "\t", r.URL.Path, "\t", code, "\t", r.UserAgent())
+	/* отправить его клиенту */
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Server", conf.Config["version"])
+	w.Write(bytes)
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	expiration := time.Now().Add(5 * time.Minute)
+	cookie := http.Cookie{Name: "host", Value: r.RemoteAddr, Expires: expiration}
+	http.SetCookie(w, &cookie)
 }
