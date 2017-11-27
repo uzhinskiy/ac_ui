@@ -1,0 +1,72 @@
+<html>
+<head>
+<title>Login</title>
+<link rel="stylesheet" href="/assets/bootstrap.min.css"> <!-- Bootstrap Grid -->
+<script src="/assets/jquery.min.js"></script>
+<script src="/assets/bootstrap.min.js"></script>
+</head>
+<body class="container">
+
+<h1>Login</h1>
+
+    <form action="/login" role="form" class="register-form" method="POST">
+        <input type="hidden" name="m" value="login">
+        <table class="table">
+            <tr>
+                <td>Username</td>
+                <td><input type="text" name="username"></td>
+            </tr>
+            <tr>
+                <td>Password</td>
+                <td><input type="password" name="passwd"></td>
+            </tr>
+        </table>
+        <button type="submit" class="btn btn-blue1">Login</button>
+    </form>
+
+<script>
+$(document).ready(function(){
+    $.get("/list", function(data){
+        //var block_arr = JSON.parse(data);
+        var block_arr = data;
+        var str = "";
+        for(var k in block_arr) {
+            str += "<tr><td>"+k+"</td>";
+            str += "<td><a href='#' data-id='"+k+"' data-toggle='modal' data-target='#update_customer'>"+block_arr[k].custname+"</a></td>";
+            str += "<td>"+block_arr[k].servicetype+"</td>";
+            str += "<td>"+block_arr[k].custemail+"</td></tr>";
+        }
+        $('#list').append(str);
+    })
+});
+
+$('#update_customer').on('shown.bs.modal',function(e){
+    var id = $(e.relatedTarget).data('id');
+    $.get("/info?id="+id, function(data){
+        var block_arr = JSON.parse(data);
+        console.log(block_arr.servicetype, block_arr.custemail);
+        $('#idh').val(id);
+        $('#idv').html(id);
+        $('#custname').val(block_arr.custname);
+        $('#servicetype').val(block_arr.servicetype);
+        $('#custemail').val(block_arr.custemail);
+    });
+});
+
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
