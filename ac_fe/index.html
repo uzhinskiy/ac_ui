@@ -1,0 +1,144 @@
+<html>
+<head>
+<title>Customers</title>
+<link rel="stylesheet" href="/assets/bootstrap.min.css"> <!-- Bootstrap Grid -->
+<script src="/assets/jquery.min.js"></script>
+<script src="/assets/bootstrap.min.js"></script>
+</head>
+<body class="container">
+
+<h1>List    <small><a href="#" data-toggle='modal' data-target='#create_customer'>add new</a></small></h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Contact</th>
+        </tr>    
+    </thead>
+    <tbody id="list">
+    </tbody>
+</table>
+
+
+<div class="modal fade" tabindex="-1" id="update_customer" role="dialog">
+  <div class="modal-dialog" role="document">
+    <form action="/update" role="form" class="register-form" method="POST">
+        <input type="hidden" name="m" value="update">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Update customer</h4>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <tr>
+                        <td>ID</td>
+                        <td><input type="hidden" id="idh" name="id"><span id="idv"></span></td>
+                    </tr>
+                        <td>Name</td>
+                        <td><input type="text" id="custname" name="custname"></td>
+                    </tr>
+                        <td>Type</td>
+                        <td><select name="servicetype" id="servicetype"><option value="-1">------</option><option value="RM">RM</option><option value="MS">MS</option></select></td>
+                    </tr>
+                        <td>Contact</td>
+                        <td><input type="text" id="custemail" name="custemail" size="50"></td>
+                    </tr>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-blue1">Update</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </form>
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div class="modal fade" tabindex="-1" id="create_customer" role="dialog">
+  <div class="modal-dialog" role="document">
+    <form action="/create" role="form" class="register-form" method="POST">
+        <input type="hidden" name="m" value="create">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Create  new customer</h4>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <tr>
+                        <td>ID</td>
+                        <td><input type="text" name="id"></td>
+                    </tr>
+                        <td>Name</td>
+                        <td><input type="text" name="custname"></td>
+                    </tr>
+                        <td>Type</td>
+                        <td><select name="servicetype"><option value="-1">------</option><option value="RM">RM</option><option value="MS">MS</option></select></td>
+                    </tr>
+                        <td>Contact</td>
+                        <td><input type="text" name="custemail"></td>
+                    </tr>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-blue1">Create</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </form>
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+
+
+<script>
+$(document).ready(function(){
+    $.get("/list", function(data){
+        //var block_arr = JSON.parse(data);
+        var block_arr = data;
+        var str = "";
+        for(var k in block_arr) {
+            str += "<tr><td>"+k+"</td>";
+            str += "<td><a href='#' data-id='"+k+"' data-toggle='modal' data-target='#update_customer'>"+block_arr[k].custname+"</a></td>";
+            str += "<td>"+block_arr[k].servicetype+"</td>";
+            str += "<td>"+block_arr[k].custemail+"</td></tr>";
+        }
+        $('#list').append(str);
+    })
+});
+
+$('#update_customer').on('shown.bs.modal',function(e){
+    var id = $(e.relatedTarget).data('id');
+    $.get("/info?id="+id, function(data){
+        var block_arr = JSON.parse(data);
+        console.log(block_arr.servicetype, block_arr.custemail);
+        $('#idh').val(id);
+        $('#idv').html(id);
+        $('#custname').val(block_arr.custname);
+        $('#servicetype').val(block_arr.servicetype);
+        $('#custemail').val(block_arr.custemail);
+    });
+});
+
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
