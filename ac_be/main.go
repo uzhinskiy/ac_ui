@@ -316,4 +316,5 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	expiration := time.Now().Add(5 * time.Minute)
 	cookie := http.Cookie{Name: "host", Value: r.RemoteAddr, Expires: expiration}
 	http.SetCookie(w, &cookie)
+	// https://stackoverflow.com/questions/40808154/golang-app-on-heroku-htaccess-basic-auth
 }

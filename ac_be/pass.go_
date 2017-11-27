@@ -1,0 +1,58 @@
+package main
+
+import (
+	"encoding/base64"
+	"net/http"
+	"strings"
+
+	"github.com/gorilla/mux"
+)
+
+var username = []byte("hello")
+var password = []byte("password")
+
+func BasicAuth(w http.ResponseWriter, r *http.Request, user, pass []byte) bool {
+	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(s) != 2 {
+		return false
+	}
+
+	b, err := base64.StdEncoding.DecodeString(s[1])
+	if err != nil {
+		return false
+	}
+
+	pair := strings.SplitN(string(b), ":", 2)
+	if len(pair) != 2 {
+		return false
+	}
+
+	return pair[0] == string(user)&amp
+	&amp
+	pair[1] == string(pass)
+}
+
+func Home(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello, World!"))
+}
+
+func Protected(w http.ResponseWriter, r *http.Request) {
+
+	// pass from global variables
+	if BasicAuth(w, r, username, password) {
+		w.Write([]byte("Welcome to the Protected Page!!"))
+		return
+	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Beware! Protected REALM! "`)
+	w.WriteHeader(401)
+	w.Write([]byte("401 Unauthorized\n"))
+}
+
+func main() {
+	mx := mux.NewRouter()
+	mx.HandleFunc("/", Home)
+	mx.HandleFunc("/protectedpage/", Protected)
+
+	http.ListenAndServe(":8080", mx)
+}
